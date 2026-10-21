@@ -5,11 +5,14 @@ import {
   fitText,
   textWidth,
 } from "../../svg-utils";
+import { createTypingTimeline } from "./typing";
 import type { RetroConfig } from "./types";
 const contactFields = [
   ["Email", "email"],
   ["Blog", "blog"],
   ["LinkedIn", "linkedin"],
+  ["Language", "language"],
+  ["Stack", "stack"],
 ] as const;
 
 export function generateRetroSvg(config: RetroConfig): string {
@@ -27,7 +30,7 @@ export function generateRetroSvg(config: RetroConfig): string {
   ) =>
     `<text x="${x}" y="${y}" fill="${color}" font-family="monospace" font-size="${size}" ${extra}>${esc(s)}</text>`;
   const win = (x: number, y: number, w: number, h: number, title: string) =>
-    `<rect x="${x + 5}" y="${y + 5}" width="${w}" height="${h}" fill="#517e7a" opacity=".26"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="#fafffd" stroke="#18343b" stroke-width="3"/><rect x="${x + 1.5}" y="${y + 1.5}" width="${w - 3}" height="38" fill="${t.a}"/><line x1="${x}" y1="${y + 40}" x2="${x + w}" y2="${y + 40}" stroke="#18343b" stroke-width="3"/>${text(x + 17, y + 27, title, 19)}`;
+    `<rect x="${x + 5}" y="${y + 5}" width="${w}" height="${h}" fill="#517e7a" opacity=".26"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="#fafffd" stroke="#18343b" stroke-width="3"/><rect x="${x + 1.5}" y="${y + 1.5}" width="${w - 3}" height="38" fill="${t.a}"/><line x1="${x}" y1="${y + 33}" x2="${x + w}" y2="${y + 33}" stroke="#18343b" stroke-width="3"/>${text(x + 17, y + 27, title, 19)}`;
   const headlineLines = wrap(val("headline"), 28, 2);
   const activeContacts = contactFields.filter(([, k]) => val(k).trim());
   const hasContact = activeContacts.length > 0;
@@ -80,55 +83,46 @@ export function generateRetroSvg(config: RetroConfig): string {
     19,
     t.accent,
   );
-  // SVG animation: type → pause → erase backwards → pause → repeat.
-  const lineWeights = aboutLines.map((line) =>
-    Math.max(1, Array.from(line).length),
-  );
-  const totalWeight = lineWeights.reduce((a, b) => a + b, 0) || 1;
-  const typeTime = totalWeight * 0.075,
-    holdTime = 1.5,
-    eraseTime = totalWeight * 0.038,
-    resetTime = 0.65;
-  const cycle = typeTime + holdTime + eraseTime + resetTime;
-  let previous = 0;
-  aboutLines.forEach((line, i) => {
-    const weight = lineWeights[i];
-    const writeStart = (previous / totalWeight) * typeTime;
-    const writeEnd = ((previous + weight) / totalWeight) * typeTime;
-    const eraseStart =
-      typeTime +
-      holdTime +
-      ((totalWeight - previous - weight) / totalWeight) * eraseTime;
-    const eraseEnd =
-      typeTime +
-      holdTime +
-      ((totalWeight - previous) / totalWeight) * eraseTime;
-    previous += weight;
-    const maskId = `typeMask${i}`,
-      y = 524 + 23 * i;
-    if (config.animation === "none") {
-      svg += text(87, y, line, 17);
-      return;
+  if (config.animation === "none") {
+    aboutLines.forEach((line, i) => {
+      svg += text(87, 524 + 23 * i, line, 17);
+    });
+  } else {
+    // Text and cursor use the same character boundaries, including reverse deletion.
+    const { glyphs, frames, duration, holdEnd, typeDelay, eraseDelay } =
+      createTypingTimeline(aboutLines);
+    const keyTime = (time: number) => (time / duration).toFixed(8);
+    glyphs.forEach((glyph, index) => {
+      const show = (index + 1) * typeDelay;
+      const hide = holdEnd + (glyphs.length - index) * eraseDelay;
+      svg += `<text x="${glyph.x}" y="${glyph.y}" fill="#18343b" font-family="monospace" font-size="17" textLength="${glyph.width}" lengthAdjust="spacingAndGlyphs" xml:space="preserve" opacity="0">${glyph.text === " " ? " " : esc(glyph.text)}<animate attributeName="opacity" values="0;1;0;0" keyTimes="0;${keyTime(show)};${keyTime(hide)};1" dur="${duration}s" repeatCount="indefinite" calcMode="discrete"/></text>`;
+    });
+    const times = frames.map((frame) => keyTime(frame.time)).join(";");
+    svg += `<rect data-typing-cursor="true" x="87" y="507" width="9" height="18" fill="${t.accent}">`;
+    for (const axis of ["x", "y"] as const) {
+      svg += `<animate attributeName="${axis}" values="${frames.map((frame) => frame[axis]).join(";")}" keyTimes="${times}" dur="${duration}s" repeatCount="indefinite" calcMode="discrete"/>`;
     }
-    const times = [
-      0,
-      writeStart,
-      writeEnd,
-      typeTime + holdTime,
-      eraseStart,
-      eraseEnd,
-      cycle,
-    ].map((v) => Math.min(1, v / cycle).toFixed(6));
-    svg += `<mask id="${maskId}" maskUnits="userSpaceOnUse" x="86" y="${y - 21}" width="920" height="25"><rect x="87" y="${y - 21}" width="0" height="25" fill="white"><animate attributeName="width" values="0;0;${Math.ceil(textWidth(line) * 10.25)};${Math.ceil(textWidth(line) * 10.25)};${Math.ceil(textWidth(line) * 10.25)};0;0" keyTimes="${times.join(";")}" dur="${cycle.toFixed(3)}s" repeatCount="indefinite" calcMode="linear"/></rect></mask>`;
-    svg += `<g mask="url(#${maskId})">${text(87, y, line, 17)}</g>`;
-  });
-  if (config.animation === "typing")
-    svg += `<rect x="87" y="${Math.min(524 + 23 * aboutLines.length, 650) - 17}" width="9" height="18" fill="${t.accent}"><animate attributeName="opacity" values="1;0;1" dur="0.75s" repeatCount="indefinite"/></rect>`;
+    svg += `<animate attributeName="opacity" values="1;0;1" keyTimes="0;0.5;1" dur="0.75s" repeatCount="indefinite" calcMode="discrete"/></rect>`;
+  }
   if (hasContact) {
-    svg += win(558, 385, 455, 285, "✉  Contact");
+    svg += win(558, 385, 455, 285, "≡  Info");
     activeContacts.forEach(([lab, k], i) => {
-      const y = 458 + i * 70;
-      svg += `<rect x="577" y="${y - 27}" width="414" height="60" rx="4" fill="${t.b}" stroke="#9dc3bc"/>${text(588, y + 2, lab, 16, "#18343b", 'font-weight="bold"')}${text(588, y + 24, fitText(val(k).trim(), 30), 16)}`;
+      const rowGap = Math.min(70, 176 / Math.max(1, activeContacts.length - 1));
+      const y = 458 + i * rowGap;
+      // A small pixel bullet and two text levels keep the list airy and readable.
+      svg += `<path d="M585 ${y - 10}h7v7h-7z" fill="${t.accent}"/>`;
+      svg += text(
+        607,
+        y - 2,
+        lab.toUpperCase(),
+        13,
+        t.accent,
+        'font-weight="bold" letter-spacing="1.4"',
+      );
+      svg += text(607, y + 23, fitText(val(k).trim(), 38), 16);
+      if (i < activeContacts.length - 1) {
+        svg += `<line x1="607" y1="${y + 33}" x2="987" y2="${y + 33}" stroke="${t.a}" stroke-width="1"/>`;
+      }
     });
   }
   svg += "</svg>";

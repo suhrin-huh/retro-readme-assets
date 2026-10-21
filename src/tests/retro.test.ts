@@ -28,15 +28,15 @@ test("limits count Unicode characters and strip invalid XML characters", () => {
     "AB",
   );
 });
-test("all themes and every optional Contact combination render", () => {
+test("all themes and every optional Info combination render", () => {
   for (const theme of ["mint", "peach", "lavender", "night"]) {
-    for (let bits = 0; bits < 8; bits++) {
+    for (let bits = 0; bits < 32; bits++) {
       const params = new URLSearchParams({ theme, animation: "none" });
-      ["email", "blog", "linkedin"].forEach((key, i) => {
+      ["email", "blog", "linkedin", "language", "stack"].forEach((key, i) => {
         if (bits & (1 << i)) params.set(key, `${key}-value`);
       });
       const svg = generateRetroSvg(parseRetroQuery(params));
-      assert.equal(svg.includes("✉  Contact"), bits !== 0);
+      assert.equal(svg.includes("≡  Info"), bits !== 0);
       assert.ok(svg.includes(`width="${bits ? 465 : 948}" height="285"`));
       assert.ok(!svg.includes("GitHub"));
       assert.ok(!svg.includes("<animate"));
@@ -64,7 +64,7 @@ test("long Korean/English strings and explicit newlines fit the text area", () =
 });
 test("typing has repeatable animation; static mode removes animation", () => {
   const svg = generateRetroSvg({ ...defaultRetroConfig });
-  assert.match(svg, /attributeName="width"/);
+  assert.match(svg, /attributeName="x"/);
   assert.match(svg, /repeatCount="indefinite"/);
   assert.ok(
     !generateRetroSvg({ ...defaultRetroConfig, animation: "none" }).includes(
@@ -86,4 +86,24 @@ test("API returns SVG, safe headers and parsed query content", async () => {
   assert.equal(response.headers.get("X-Content-Type-Options"), "nosniff");
   assert.match(response.headers.get("Cache-Control")!, /s-maxage=3600/);
   assert.match(await response.text(), /Minchae/);
+});
+
+test("cursor follows character boundaries across lines and backwards during deletion", async () => {
+  const { createTypingTimeline } = await import("../lib/widgets/retro/typing");
+  const { frames, glyphs } = createTypingTimeline(["AB", "한😀"]);
+  assert.equal(glyphs.length, 4);
+  assert.deepEqual(
+    frames.map((frame) => frame.visible),
+    [0, 1, 2, 3, 4, 4, 3, 2, 1, 0, 0],
+  );
+  assert.equal(frames[1].x, 97.25);
+  assert.equal(frames[3].y, 530);
+  assert.equal(frames[3].x, 107.5);
+  assert.equal(frames[7].x, frames[2].x);
+  assert.equal(frames[7].y, frames[2].y);
+  assert.ok(
+    frames.every((frame, i) => i === 0 || frame.time > frames[i - 1].time),
+  );
+  const combined = createTypingTimeline(["e\u0301👩‍💻"]);
+  assert.equal(combined.glyphs.length, 2);
 });

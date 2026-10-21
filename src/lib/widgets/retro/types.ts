@@ -10,5 +10,7 @@ export interface RetroConfig {
   email: string;
   blog: string;
   linkedin: string;
+  language: string;
+  stack: string;
   animation: "typing" | "none";
 }

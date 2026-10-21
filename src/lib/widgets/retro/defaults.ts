@@ -9,6 +9,8 @@ export const textLimits = {
   email: 72,
   blog: 72,
   linkedin: 72,
+  language: 72,
+  stack: 72,
 } as const;
 export const defaultRetroConfig: Readonly<RetroConfig> = {
   title: "CONNECT.EXE",
@@ -22,5 +24,7 @@ export const defaultRetroConfig: Readonly<RetroConfig> = {
   email: "",
   blog: "",
   linkedin: "",
+  language: "",
+  stack: "",
   animation: "typing",
 };
