@@ -1,7 +1,7 @@
 # Retro README Assets
 
 Next.js App Router + TypeScript로 만드는 GitHub README용 동적 SVG 위젯입니다.
-설계 문서의 첫 구현 범위인 **Phase 1–2**를 구현했습니다.
+SVG API와 입력 폼 기반 실시간 미리보기를 제공합니다.
 
 ## 배포 서비스
 
@@ -26,6 +26,11 @@ npm run dev
 - 정적 SVG: http://localhost:3000/api/widgets/retro?animation=none
 - 테마와 연락처: http://localhost:3000/api/widgets/retro?theme=peach&name=Minchae&email=hello%40example.com&animation=none
 
+`/widgets/retro`의 입력 폼에서 소개, 테마, Info, 애니메이션을 편집하면
+미리보기와 이미지 URL이 자동으로 갱신됩니다. 이미지 URL 및 README HTML을
+복사할 수 있고, 페이지 주소를 저장하면 같은 설정으로 다시 열 수 있습니다.
+모바일에서는 미리보기 아래에 입력 폼을 표시합니다.
+
 `/widgets/retro`에서도 같은 쿼리를 사용합니다. 미리보기와 API는 같은
 `generateRetroSvg(config)` 함수를 호출합니다. 원본 HTML은 루트와
 `reference/retro_readme_widget_compact.html`에 그대로 보존했습니다.
@@ -42,10 +47,14 @@ npm run dev
 | about                   | 260, 표시 영역 내 최대 6줄      | 기본 영문 소개          |
 | theme                   | mint / peach / lavender / night | mint                    |
 | email / blog / linkedin | 각각 72                         | 빈 값, 표시하지 않음    |
+| language / stack        | 각각 72                         | 빈 값, 표시하지 않음    |
 | animation               | typing / none                   | typing                  |
 
 누락되거나 공백인 소개 필드는 기본값으로, 잘못된 열거형도 기본값으로 처리합니다.
-연락처는 모두 선택이며 전부 비우면 About Me가 확장됩니다. GitHub 연락처는 없습니다.
+Info 패널은 Email · Blog · LinkedIn · Language · Stack을 박스 없이 목록으로 표시합니다.
+기존 `email`, `blog`, `linkedin` 쿼리는 그대로 사용합니다.
+`language=Java · Kotlin`, `stack=Spring Boot · PostgreSQL`처럼 기술 정보를 추가할 수 있습니다. 모두 선택 항목이며
+전부 비우면 Info를 숨기고 About Me를 확장합니다. GitHub 연락처는 없습니다.
 문자 수는 Unicode 코드 포인트 기준입니다. XML에서 허용되지 않는 문자는 제거하고
 특수문자는 이스케이프합니다. 긴 텍스트는 줄바꿈하거나 표시 영역에 맞춰 말줄임합니다.
 쿼리는 `URLSearchParams`로 인코딩하세요. 쿼리 정보는 공개됩니다.
@@ -92,6 +101,5 @@ npm run start
 `eslint-config-next`의 전이 의존성(`braces` 경유)에서 high 5건이 보고됩니다.
 권장 자동 수정은 Next.js 14용 린트 설정으로 내려가므로 적용하지 않았습니다.
 
-다음 범위는 Phase 3의 React 편집 폼, 복사·다운로드·초기화와 Phase 4의
-실제 GitHub 애니메이션 검증입니다. Vercel 연결 도메인은
+남은 작업은 SVG 다운로드와 실제 GitHub README에서의 애니메이션 검증입니다. Vercel 연결 도메인은
 https://retro-readme-assets.vercel.app 입니다.
