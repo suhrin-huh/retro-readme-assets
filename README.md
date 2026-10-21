@@ -3,7 +3,15 @@
 Next.js App Router + TypeScript로 만드는 GitHub README용 동적 SVG 위젯입니다.
 설계 문서의 첫 구현 범위인 **Phase 1–2**를 구현했습니다.
 
-## 실행
+## 배포 서비스
+
+- 카탈로그: https://retro-readme-assets.vercel.app
+- 위젯 미리보기: https://retro-readme-assets.vercel.app/widgets/retro
+- 기본 SVG: https://retro-readme-assets.vercel.app/api/widgets/retro
+- 정적 SVG: https://retro-readme-assets.vercel.app/api/widgets/retro?animation=none
+- 테마와 연락처 예시: https://retro-readme-assets.vercel.app/api/widgets/retro?theme=peach&name=Minchae&email=hello%40example.com&animation=none
+
+## 로컬 실행
 
 Node.js 20.9 이상을 사용하세요.
 
@@ -47,11 +55,11 @@ API는 `image/svg+xml; charset=utf-8`, `X-Content-Type-Options: nosniff`,
 
 ## README에 삽입
 
-Vercel에 배포한 뒤 `YOUR_DOMAIN`을 실제 도메인으로 바꾸세요.
+아래 코드를 README에 붙여 넣고 `name`, `theme` 등의 쿼리를 수정하세요.
 
 ```html
 <img
-  src="https://YOUR_DOMAIN/api/widgets/retro?name=Minchae&amp;theme=mint&amp;animation=none"
+  src="https://retro-readme-assets.vercel.app/api/widgets/retro?name=Minchae&amp;theme=mint&amp;animation=none"
   alt="My retro introduction"
   width="100%"
 />
@@ -85,4 +93,5 @@ npm run start
 권장 자동 수정은 Next.js 14용 린트 설정으로 내려가므로 적용하지 않았습니다.
 
 다음 범위는 Phase 3의 React 편집 폼, 복사·다운로드·초기화와 Phase 4의
-실제 GitHub 애니메이션 검증입니다. GitHub push 및 Vercel 배포는 수행하지 않았습니다.
+실제 GitHub 애니메이션 검증입니다. Vercel 연결 도메인은
+https://retro-readme-assets.vercel.app 입니다.
