@@ -354,3 +354,48 @@ textarea:focus-visible {
     grid-row: 3;
   }
 }
+
+.copy-action {
+  position: relative;
+}
+.copy-notice-region {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.copy-action:last-child .copy-notice-region {
+  left: auto;
+  right: 0;
+}
+.copy-notice {
+  display: block;
+  width: max-content;
+  max-width: min(260px, 75vw);
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: #285b58;
+  color: #fff;
+  box-shadow: 0 6px 20px #18343b26;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.copy-notice::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 20px;
+  border: 6px solid transparent;
+  border-top-color: #285b58;
+}
+.copy-action:last-child .copy-notice::after {
+  left: auto;
+  right: 20px;
+}
+.copy-notice.error {
+  background: #914539;
+}
+.copy-notice.error::after {
+  border-top-color: #914539;
+}

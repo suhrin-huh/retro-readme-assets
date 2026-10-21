@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { defaultRetroConfig, textLimits } from "@/lib/widgets/retro/defaults";
 import { parseRetroQuery } from "@/lib/widgets/retro/parse-query";
 import { generateRetroSvg } from "@/lib/widgets/retro/render-svg";
@@ -8,7 +8,7 @@ import type { RetroConfig } from "@/lib/widgets/retro/types";
 import { themes } from "@/lib/themes";
 import { escapeXml } from "@/lib/svg-utils";
 
-const subscribeOrigin = () => () => {};
+const widgetOrigin = "https://retro-readme-assets.vercel.app";
 
 const fields = [
   ["title", "창 제목"],
@@ -30,19 +30,27 @@ export default function RetroEditor({
   initialConfig: RetroConfig;
 }) {
   const [draft, setDraft] = useState(initialConfig);
-  const origin = useSyncExternalStore(
-    subscribeOrigin,
-    () => window.location.origin,
-    () => "https://retro-readme-assets.vercel.app",
-  );
   const [message, setMessage] = useState("");
+  const [copyNotice, setCopyNotice] = useState<{
+    target: "url" | "html";
+    text: string;
+    error: boolean;
+  } | null>(null);
+  useEffect(() => {
+    if (!copyNotice) return;
+    const timer = window.setTimeout(
+      () => setCopyNotice(null),
+      copyNotice.error ? 5000 : 3000,
+    );
+    return () => window.clearTimeout(timer);
+  }, [copyNotice]);
   const config = useMemo(
     () => parseRetroQuery(new URLSearchParams(Object.entries(draft))),
     [draft],
   );
   const query = new URLSearchParams(Object.entries(config)).toString();
   const svg = useMemo(() => generateRetroSvg(config), [config]);
-  const imageUrl = `${origin}/api/widgets/retro?${query}`;
+  const imageUrl = `${widgetOrigin}/api/widgets/retro?${query}`;
   const html = `<img src="${escapeXml(imageUrl)}" alt="My retro introduction" width="100%" />`;
 
   useEffect(() => {
@@ -57,14 +65,16 @@ export default function RetroEditor({
     return () => window.clearTimeout(timer);
   }, [query]);
 
-  async function copy(value: string, label: string) {
+  async function copy(value: string, label: string, target: "url" | "html") {
     try {
       await navigator.clipboard.writeText(value);
-      setMessage(`${label}를 복사했습니다.`);
+      setCopyNotice({ target, text: `${label} 복사 완료!`, error: false });
     } catch {
-      setMessage(
-        "복사가 제한되었습니다. 아래 텍스트를 직접 선택해 복사해 주세요.",
-      );
+      setCopyNotice({
+        target,
+        text: "복사할 수 없어요. 텍스트를 직접 선택해 복사해 주세요.",
+        error: true,
+      });
     }
   }
 
@@ -202,21 +212,37 @@ export default function RetroEditor({
             rows={4}
             value={imageUrl}
           />
-          <div className="actions">
-            <button
-              type="button"
-              className="button"
-              onClick={() => copy(imageUrl, "이미지 URL")}
-            >
-              URL 복사
-            </button>
-            <button
-              type="button"
-              className="button secondary"
-              onClick={() => copy(html, "README HTML")}
-            >
-              README HTML 복사
-            </button>
+          <div className="actions copy-actions">
+            {(
+              [
+                ["url", "URL 복사", imageUrl, "이미지 URL"],
+                ["html", "README HTML 복사", html, "README HTML"],
+              ] as const
+            ).map(([target, buttonLabel, value, label]) => (
+              <div className="copy-action" key={target}>
+                <button
+                  type="button"
+                  className={`button${target === "html" ? " secondary" : ""}`}
+                  onClick={() => copy(value, label, target)}
+                >
+                  {buttonLabel}
+                </button>
+                <div
+                  className="copy-notice-region"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  {copyNotice?.target === target && (
+                    <span
+                      className={`copy-notice${copyNotice.error ? " error" : ""}`}
+                    >
+                      {copyNotice.error ? "!" : "✓"} {copyNotice.text}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
           <details>
             <summary>README HTML 보기</summary>
